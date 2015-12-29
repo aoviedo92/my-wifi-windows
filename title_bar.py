@@ -1,10 +1,10 @@
-import sys
+from PyQt4 import QtGui
+
+from PyQt4.QtCore import Qt
 from PyQt4.QtGui import *
-from PyQt4 import QtCore
-from PyQt4.QtCore import Qt, SIGNAL
+from res import resources
 
-
-# import resources
+TITLE = "Easy Wifi Windows"
 
 
 class TitleBar(QDialog):
@@ -15,7 +15,6 @@ class TitleBar(QDialog):
         self.maximize_btn = QToolButton(self)
         self.close_btn = QToolButton(self)
 
-        self.window_title = QLabel(self)
         self.maxNormal = False
 
         self.minimize_btn.clicked.connect(self.show_small)
@@ -28,20 +27,19 @@ class TitleBar(QDialog):
         self.setAutoFillBackground(True)
         self.setBackgroundRole(QPalette.Highlight)
 
-        self.minimize_btn.setIcon(QIcon('min2.png'))
+        self.minimize_btn.setIcon(QIcon(':/min'))
         self.maximize_btn.setIcon(QIcon('img/max.png'))
-        self.close_btn.setIcon(QIcon('close.png'))
+        self.close_btn.setIcon(QIcon(':/close'))
 
         self.close_btn.setFixedSize(15, 15)
         self.minimize_btn.setFixedSize(15, 15)
         self.maximize_btn.setFixedSize(10, 10)
-        # self.setMinimumHeight(50)
 
-        self.window_title.setText("Easy Wifi Windows")
-        # self.setWindowTitle("Window Title")
+        window_title = QLabel(self)
+        window_title.setText(TITLE)
 
         layout = QHBoxLayout(self)
-        layout.addWidget(self.window_title)
+        layout.addWidget(window_title)
         layout.addWidget(self.minimize_btn)
         # layout.addWidget(self.maximize_btn)
         layout.addWidget(self.close_btn)
@@ -82,7 +80,8 @@ class TitleBar(QDialog):
         self.setStyleSheet(css)
 
     def show_small(self):
-        self.frame.showMinimized()
+        self.frame.showMinimized()  # minimiza a la taskbar
+        self.frame.hide()  # lo minimiza al systray
 
     def show_max_restore(self):
         if self.maxNormal:
@@ -100,7 +99,6 @@ class TitleBar(QDialog):
         self.frame.close()
 
     def mousePressEvent(self, event):
-        print("self.frame", self.frame)
         if event.button() == Qt.LeftButton:
             self.frame.moving = True
             self.frame.offset = event.pos()
@@ -110,15 +108,20 @@ class TitleBar(QDialog):
             self.frame.move(event.globalPos() - self.frame.offset)
 
 
+TRAY_ICON = True
+
+
 class Frame(QFrame):
     def __init__(self, parent=None):
         QFrame.__init__(self, parent)
         self.already_close = False
-        self.__m_mouse_down = False
-        self.__m_titleBar = TitleBar(self)
-        self.__m_content = QWidget()
-        self.__layout = QVBoxLayout()
+        self.mouse_down = False
+        self.title_bar = TitleBar(self)
+        self.content = QWidget()
+        self.layout = QVBoxLayout()
         self.set_ui()
+        if TRAY_ICON:
+            self.createTrayIcon()
 
     def set_ui(self):
         # self.setFrameShape(QFrame.StyledPanel)
@@ -126,16 +129,16 @@ class Frame(QFrame):
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.setMouseTracking(True)
         vbox = QVBoxLayout(self)
-        vbox.addWidget(self.__m_titleBar)
+        vbox.addWidget(self.title_bar)
         vbox.setMargin(0)
         vbox.setSpacing(0)
         self.resize(300, 500)
 
-        self.__layout.addWidget(self.__m_content)
+        self.layout.addWidget(self.content)
         # self.layout.addWidget(QLabel("label from frame"))
         # layout.setMargin(10)
         # layout.setSpacing(0)
-        vbox.addLayout(self.__layout)
+        vbox.addLayout(self.layout)
         vbox.addStretch(1)
 
         # effect = QGraphicsDropShadowEffect(self)
@@ -146,10 +149,9 @@ class Frame(QFrame):
         self.show()
 
     def layout_add(self, widget):
-        self.__layout.addWidget(widget)
+        self.layout.addWidget(widget)
 
     def qss(self, css=None):
-        print(2)
         if not css:
             css = """
             Frame{
@@ -162,28 +164,60 @@ class Frame(QFrame):
             """
         self.setStyleSheet(css)
 
-    def contentWidget(self):
-        return self.__m_content
+        # def contentWidget(self):
+        #     return self.content
 
-    def titleBar(self):
-        return self.__m_titleBar
+        # def titleBar(self):
+        #     return self.title_bar
 
-    def mousePressEvent(self, event):
-        self.m_old_pos = event.pos()
-        self.__m_mouse_down = event.button() == Qt.LeftButton
+        # def mousePressEvent(self, event):
+        #     self.m_old_pos = event.pos()
+        #     self.mouse_down = event.button() == Qt.LeftButton
 
-    def mouseMoveEvent(self, event):
-        x = event.x()
-        y = event.y()
+        # def mouseMoveEvent(self, event):
+        #     x = event.x()
+        #     y = event.y()
+        #
+        # def mouseReleaseEvent(self, event):
+        #     m_mouse_down = False
 
-    def mouseReleaseEvent(self, event):
-        m_mouse_down = False
+    def createTrayIcon(self):
+        minimizeAction = QAction("Mi&nimize", self, triggered=self.hide)
+        maximizeAction = QAction("Ma&ximize", self, triggered=self.showMaximized)
+        restoreAction = QAction("&Restore", self, triggered=self.showNormal)
+        quitAction = QAction("&Quit", self, triggered=QtGui.qApp.quit)
 
-        # if __name__ == '__main__':
-        #     app = QApplication(sys.argv)
-        # box = Frame()
-        # l = QVBoxLayout(box.contentWidget())
-        # l.setMargin(10)
-        # l.addWidget(main)
-        # box.show()
-        # app.exec_()
+        trayIconMenu = QMenu(self)
+        trayIconMenu.addAction(minimizeAction)
+        trayIconMenu.addAction(maximizeAction)
+        trayIconMenu.addAction(restoreAction)
+        trayIconMenu.addSeparator()
+        trayIconMenu.addAction(quitAction)
+
+        self.trayIcon = QSystemTrayIcon(self)
+        self.trayIcon.setContextMenu(trayIconMenu)
+        self.trayIcon.setIcon(QIcon(':/wifi-off'))
+
+        self.trayIcon.messageClicked.connect(self.message_clicked)
+        self.trayIcon.activated.connect(self.icon_activated)
+        self.trayIcon.show()
+
+    def message_clicked(self):
+        QMessageBox.information(self, "message title",
+                                "message body", "button text")
+
+    def icon_activated(self, reason):
+        if reason == QtGui.QSystemTrayIcon.Trigger:
+            print(self.trayIcon.icon())
+        if reason == QSystemTrayIcon.MiddleClick:
+            self.show_message()
+
+    def show_message(self):
+        titleEdit = QLineEdit("titulo")
+        bodyEdit = QTextEdit()
+        bodyEdit.setPlainText("message.")
+        icon = QSystemTrayIcon.MessageIcon(QSystemTrayIcon.Information)
+
+        self.trayIcon.showMessage(titleEdit.text(),
+                                  bodyEdit.toPlainText(), icon,
+                                  5000)

@@ -2,7 +2,9 @@ import time
 import sys
 import ctypes
 from PyQt4.QtGui import *
+
 from title_bar import Frame
+from activities import HotSpot
 
 APP_ID = 'dev$oviedo.my-wifi-windows-py3.3PyQt4.v1'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
@@ -11,8 +13,8 @@ ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
 class Main(QWidget):
     def __init__(self, parent=None):
         super(Main, self).__init__(parent)
-        self.already_close = False
-        self.btn_txt, self.browser_text = "", ""
+        hotspot = HotSpot(self)
+        hotspot.show()
         self.set_ui()
 
     def set_ui(self):
@@ -28,5 +30,5 @@ class UI(Frame):
 
 app = QApplication(sys.argv)
 UI()
-app.setWindowIcon(QIcon(":/icon"))
+# app.setWindowIcon(QIcon(":/icon"))
 app.exec_()

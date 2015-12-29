@@ -1,0 +1,2 @@
+netsh wlan start hostednetwork:
+    Se inició la red hospedada.

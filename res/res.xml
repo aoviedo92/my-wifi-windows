@@ -1,0 +1,9 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource>
+        <file alias="close">close.png</file>
+        <file alias="min">min2.png</file>
+        <file alias="wifi">wifi.ico</file>
+        <file alias="wifi-off">wifi-off.png</file>
+    </qresource>
+</RCC>
