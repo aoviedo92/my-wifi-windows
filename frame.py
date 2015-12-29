@@ -1,5 +1,5 @@
 from PyQt4 import QtGui
-
+from netsh import state_hosted_network, LANG_DICT
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui import *
 from res import resources
@@ -196,7 +196,7 @@ class Frame(QFrame):
 
         self.trayIcon = QSystemTrayIcon(self)
         self.trayIcon.setContextMenu(trayIconMenu)
-        self.trayIcon.setIcon(QIcon(':/wifi-off'))
+        self.set_icon_by_state_hosted_network()
 
         self.trayIcon.messageClicked.connect(self.message_clicked)
         self.trayIcon.activated.connect(self.icon_activated)
@@ -208,9 +208,11 @@ class Frame(QFrame):
 
     def icon_activated(self, reason):
         if reason == QtGui.QSystemTrayIcon.Trigger:
-            print(self.trayIcon.icon())
+            # self.title_bar.frame.showNormal()
+            self.show()
         if reason == QSystemTrayIcon.MiddleClick:
-            self.show_message()
+            self.set_icon_by_state_hosted_network()
+            # self.show_message()
 
     def show_message(self):
         titleEdit = QLineEdit("titulo")
@@ -221,3 +223,17 @@ class Frame(QFrame):
         self.trayIcon.showMessage(titleEdit.text(),
                                   bodyEdit.toPlainText(), icon,
                                   5000)
+    def set_icon_by_state_hosted_network(self):
+        """
+        establece el icono del systray segun el estado de la red hospedada.
+        no iniciada --> icono gris
+        iniciada --> icono color
+        """
+        text, state = state_hosted_network()
+
+        if state == LANG_DICT['state_init']:
+            self.trayIcon.setIcon(QIcon(':/wifi'))
+        elif state == LANG_DICT['state_not_init']:
+            self.trayIcon.setIcon(QIcon(':/wifi-off'))
+        else:
+            self.trayIcon.setIcon(QIcon(':/wifi-off'))

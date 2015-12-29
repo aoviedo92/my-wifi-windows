@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 from locale import getdefaultlocale
 
@@ -42,6 +43,28 @@ def check_hosted_network():
     return False
 
 
+def show_hosted_network():
+    show = run_cmd('netsh wlan show hostednetwork')
+    return show
+
+
+def state_hosted_network():
+    show = show_hosted_network()
+    state = ""
+    btn_text = "Iniciando..."
+    for line in show:
+        if re.match("^%s\s+:.+$" % LANG_DICT['state'], line):
+            # si la linea coincide con algo asi (Estado                 : Iniciado)
+            # partir por : y quitar los espacios en blanco
+            state = line.split(":")[1].strip()
+            break
+    if state == LANG_DICT['state_init']:
+        btn_text = "Parar"
+    elif state == LANG_DICT['state_not_init']:
+        btn_text = "Iniciar"
+    elif state == LANG_DICT['state_not_available']:
+        btn_text = "Activar"
+    return btn_text, state
 # print(run_cmd('ipconfig'))
 # print(check_hosted_network())
-
+# state_hosted_network()

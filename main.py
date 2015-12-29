@@ -3,7 +3,7 @@ import sys
 import ctypes
 from PyQt4.QtGui import *
 
-from title_bar import Frame
+from frame import Frame
 from activities import HotSpot
 
 APP_ID = 'dev$oviedo.my-wifi-windows-py3.3PyQt4.v1'
