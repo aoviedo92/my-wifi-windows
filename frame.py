@@ -223,13 +223,14 @@ class Frame(QFrame):
         self.trayIcon.showMessage(titleEdit.text(),
                                   bodyEdit.toPlainText(), icon,
                                   5000)
+
     def set_icon_by_state_hosted_network(self):
         """
         establece el icono del systray segun el estado de la red hospedada.
         no iniciada --> icono gris
         iniciada --> icono color
         """
-        text, state = state_hosted_network()
+        state = state_hosted_network()
 
         if state == LANG_DICT['state_init']:
             self.trayIcon.setIcon(QIcon(':/wifi'))
