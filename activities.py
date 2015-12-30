@@ -334,18 +334,14 @@ class HotSpot(Activity):
             self.TOAST_COLOR, self.TOAST_TEXT = "", ""
 
     def upd_ui(self):
+        """
+        actualiza cada 5s el estado del btn
+        """
         while True:
-            ctrl = False
+            process = False#mientras se este procesando los cmd de netsh, deshabilitar btn
+            self.btn.setEnabled(True)
 
             state = netsh.HOSTED_NETWORK_INFO['state']
-
-            # if self.btn.text() == "Activando...":
-            #     self.btn.setText("Iniciar")
-            #     self.block_thread = True
-            #     self.btn_clicked()
-
-
-            print('state', state)
 
             if state == netsh.LANG_DICT['state_init']:
                 btn_text = "Parar"
@@ -355,28 +351,33 @@ class HotSpot(Activity):
                 btn_text = "Activar"
 
             if self.btn.text() == "Activando...":  # texto actual
-                if btn_text != "Iniciar":
-                    btn_text = "Activando..."
-                    self.btn.setEnabled(False)
-                elif btn_text == "Iniciar":
+                self.btn.setEnabled(False)
+                process = True
+                if btn_text == "Iniciar":
                     self.btn_change_text(btn_text)
                     self.btn_clicked()
-                ctrl = True
+                    process = False
 
             if self.btn.text() == "Iniciando...":
-                if btn_text != "Parar":
-                    btn_text = "Iniciando..."
-                    self.btn.setEnabled(False)
-                elif btn_text == "Parar":
+                # si esta iniciando, no se puede habilitar hasta q termine
+                process = True
+                self.btn.setEnabled(False)
+                if btn_text == "Parar":  # ya ha parado
                     self.btn_change_text(btn_text)
-                ctrl = True
+                    self.btn.setEnabled(True)
+                    process = False
 
-            print('btn', btn_text)
-            if not ctrl:
+            if self.btn.text() == "Deteniendo...":
+                self.btn.setEnabled(False)
+                process = True
+                if btn_text == "Iniciar":
+                    self.btn_change_text(btn_text)
+                    self.btn.setEnabled(True)
+                    process = False
+
+            if not process:
                 self.btn_change_text(btn_text)
-            else:
                 self.emit_toast()
-            self.btn.setEnabled(True)
             time.sleep(5)
 
     def text_edited(self):

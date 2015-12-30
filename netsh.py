@@ -75,7 +75,7 @@ def show_hosted_network():
     # print("show hosted net")
     # lock.acquire()
     show = run_cmd('netsh wlan show hostednetwork')
-    print(show)
+    # print(show)
     # lock.release()
     # print(show)
     return show
