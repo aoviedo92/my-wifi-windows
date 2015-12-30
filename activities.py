@@ -338,11 +338,11 @@ class HotSpot(Activity):
         actualiza cada 5s el estado del btn
         """
         while True:
-            process = False#mientras se este procesando los cmd de netsh, deshabilitar btn
+            process = False  # mientras se este procesando los cmd de netsh, deshabilitar btn
             self.btn.setEnabled(True)
 
+            # comprobar estado de la red, para actualiz el btn
             state = netsh.HOSTED_NETWORK_INFO['state']
-
             if state == netsh.LANG_DICT['state_init']:
                 btn_text = "Parar"
             elif state == netsh.LANG_DICT['state_not_init']:
@@ -354,20 +354,20 @@ class HotSpot(Activity):
                 self.btn.setEnabled(False)
                 process = True
                 if btn_text == "Iniciar":
-                    self.btn_change_text(btn_text)
-                    self.btn_clicked()
-                    process = False
+                    self.btn_change_text(btn_text)  # cambiar a Iniciar
+                    self.btn_clicked()  # para q funcione como si fuera un clic, al comprobar q el btn text es Iniciar, iniciara la red
+                    process = False  # terminado el procesamiento, se emite un toast con la noticia
 
             if self.btn.text() == "Iniciando...":
                 # si esta iniciando, no se puede habilitar hasta q termine
                 process = True
                 self.btn.setEnabled(False)
-                if btn_text == "Parar":  # ya ha parado
-                    self.btn_change_text(btn_text)
-                    self.btn.setEnabled(True)
-                    process = False
+                if btn_text == "Parar":  # si el estado es Iniciado, el btn_text sera Parar
+                    self.btn_change_text(btn_text)  # entonces si la red ya inicio, actualiz el btn-text
+                    self.btn.setEnabled(True)  # lo habilitamos
+                    process = False  # y emitimos Toast con la notificacion
 
-            if self.btn.text() == "Deteniendo...":
+            if self.btn.text() == "Deteniendo...":  # el mismo proc para detener la red
                 self.btn.setEnabled(False)
                 process = True
                 if btn_text == "Iniciar":
@@ -375,9 +375,9 @@ class HotSpot(Activity):
                     self.btn.setEnabled(True)
                     process = False
 
-            if not process:
-                self.btn_change_text(btn_text)
-                self.emit_toast()
+            if not process:  # si no hay proc en backgr
+                self.btn_change_text(btn_text)  # establec el btn-text actual
+                self.emit_toast()  # siemre q process=False se notifica q ocurrio
             time.sleep(5)
 
     def text_edited(self):
