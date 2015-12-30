@@ -1,12 +1,18 @@
+import random
+import re
+import threading
+import time
 from PyQt4.QtCore import QRect, QPropertyAnimation, SIGNAL
 from PyQt4.QtGui import *
 from PyQt4 import QtCore
 import netsh
 
-ACTION_BAR_HEIGHT = 50
+RUN = True
 
 
 class ActionBar(QFrame):
+    ACTION_BAR_HEIGHT = 50
+
     def __init__(self, parent=None):
         super(ActionBar, self).__init__(parent)
         self.hotspot_btn = QPushButton("HotSpot")
@@ -22,7 +28,7 @@ class ActionBar(QFrame):
         layout.addStretch(1)
         self.setLayout(layout)
         self.move(0, 0)
-        self.setFixedSize(300, ACTION_BAR_HEIGHT)
+        self.setFixedSize(300, self.ACTION_BAR_HEIGHT)
         self.setCursor(QCursor(QtCore.Qt.PointingHandCursor))
         self.setStyleSheet(self.set_qss())
 
@@ -144,44 +150,234 @@ class Activity(QFrame):
 class Info(Activity):
     def __init__(self, parent=None):
         super(Info, self).__init__(parent)
-        label = QLabel("info")
-        self.linear_layout.addWidget(label)
+        # self.browser = QTextBrowser()
+        # self.browser.setFixedSize(270, 350)
+        self.config_lbl = QLabel("Configuración de la red hospedada")
+        self.state_lbl = QLabel("Estado de la red hospedada")
+        self.users_lbl = QLabel("Usuarios conectados")
+        # self.linear_layout.addWidget(self.browser)
+        self.linear_layout.addWidget(self.config_lbl)
+        self.linear_layout.addWidget(self.state_lbl)
+        self.linear_layout.addWidget(self.users_lbl)
+        # self.browser.append('<h1>texto</h1>')
+        self.set_ui()
+
+        # thread = threading.Thread(target=self.run)
+        # self.thread = threading.Thread(target=self.run)
+        # thread.setName("browser")
+        # self.thread.setName("InfoThread")
+        # self.thread.setDaemon(True)
+        # self.thread.start()
+
+    def run(self):
+        while True:
+            # self.set_text_browser()
+            # show = netsh.show_hosted_network()
+            # print(show)
+            # self.label.setText(str(random.randint(0, 100)))
+            # print(self.thread._stopped)
+            threads = threading.enumerate()
+            # print(threads)
+            time.sleep(5)
+
+    def upd_info(self):
+        show = netsh.show_hosted_network()
+
+    # def set_text_browser(self):
+    #     self.browser.clear()
+    #     show = netsh.show_hosted_network()
+    #     table = "<table width='250'>"
+    #     for line in show:
+    #         if line.find("--------") != -1:
+    #             continue
+    #         elif line.find(" : ") != -1 or line.find(": ") != -1:
+    #             cols = line.split(":")
+    #             row = """
+    #                 <tr>
+    #                 <td align="left">%s</td>
+    #                 <td align="left">%s</td>
+    #                 </tr>
+    #                 """ % (cols[0].strip(), cols[1].strip())
+    #             table += row
+    #         elif re.match('^.{2}:.{2}.*\s+Autenticado', line):
+    #             row = "<tr><td colspan=2><span style='color: coral'>%s</span></td></tr>" % line
+    #             table += row
+    #         else:
+    #             row = "<tr><td colspan=2><h3>%s</h3></td></tr>" % line
+    #             table += row
+    #     table += "</table>"
+    #     self.browser.append(table)
+
+    def set_ui(self):
+        # self.set_text_browser()
+        self.config_lbl.setObjectName("title")
+        self.state_lbl.setObjectName("title")
+        self.users_lbl.setObjectName("title")
+        self.setStyleSheet("""
+        #title{
+            color: #ccc;
+            font: 18px;
+        }
+        Info{
+            background-color: #fff;
+        }
+        QTextBrowser{
+            border: 0;
+        }
+        """)
 
 
 class HotSpot(Activity):
+    TOAST_TEXT = ""
+    TOAST_COLOR = ""
+
     def __init__(self, parent=None):
         super(HotSpot, self).__init__(parent)
         self.ssid_edit = QLineEdit()
         self.key_edit = QLineEdit()
-        self.btn = QPushButton("Iniciando...")
+        self.btn = QPushButton("...")
+        self.connect(self.btn, SIGNAL("clicked()"), self.btn_clicked)
+
         self.ssid_edit.textEdited.connect(self.text_edited)
         self.key_edit.textEdited.connect(self.text_edited)
-
         self.set_ui()
 
-    def set_ui(self):
-        state = netsh.state_hosted_network()
-        btn_text = "Iniciando..."
-        if state == netsh.LANG_DICT['state_init']:
-            btn_text = "Parar"
-        elif state == netsh.LANG_DICT['state_not_init']:
-            btn_text = "Iniciar"
-        elif state == netsh.LANG_DICT['state_not_available']:
-            btn_text = "Activar"
-        self.btn_change_text(btn_text)
+        thread = threading.Thread(target=self.upd_ui)
+        thread.setName("HotSpotThread")
+        thread.setDaemon(True)
+        thread.start()
 
+    def validate(self):
+        try:
+            ssid = str(self.ssid_edit.text())
+            key = str(self.key_edit.text())
+            if ssid.strip() == "" or key.strip() == "":
+                self.TOAST_TEXT = "LLene todos los campos"
+                self.TOAST_COLOR = "error"
+                return False
+            if len(key) < 8:
+                self.TOAST_TEXT = "El password debe tener \n8 o más caracteres"
+                self.TOAST_COLOR = "error"
+                return False
+            if ssid.find(" ") != -1 or key.find(" ") != -1:
+                self.TOAST_TEXT = "Los datos no deben tener\nespacios"
+                self.TOAST_COLOR = "error"
+                return False
+            return True
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            self.TOAST_TEXT = "Los datos deben ser \ncadenas ASCII"
+            self.TOAST_COLOR = "error"
+            return False
+
+    def btn_clicked(self):
+        if not self.validate():
+            self.emit(SIGNAL("toast"), self.TOAST_TEXT, self.TOAST_COLOR)
+            self.TOAST_COLOR, self.TOAST_TEXT = "", ""
+            return
+
+        self.btn.setEnabled(False)
+
+        btn_text = self.btn.text()
+        if btn_text == "Iniciar":
+            self.btn.setText("Iniciando...")
+            start = netsh.start_hosted_network()
+            if start:
+                text = "Se inició correctamente\nla red hospedada"
+                info = "info"
+            else:
+                text = "No se pudo iniciar\ncorrectamente la red hospedada"
+                info = "error"
+        elif btn_text == "Parar":
+            self.btn.setText("Deteniendo...")
+            stop = netsh.stop_hosted_network()
+            if stop:
+                text = "Se detuvo la red hospedada"
+                info = "info"
+            else:
+                text = "No se pudo detener\nla red hospedada"
+                info = "info"
+        # todo Activar
+        elif btn_text == "Activar":
+            self.btn.setText("Activando...")
+            if self.ssid_edit.text() == netsh.HOSTED_NETWORK_INFO['ssid'] and \
+                            self.key_edit.text() == netsh.HOSTED_NETWORK_INFO['key']:
+                activate = netsh.only_activate_hosted_network()
+                if activate:  # ahora iniciarla
+                    # netsh.start_hosted_network()
+                    text = "El modo de red hospedada\nse estableció en permitir"
+                    info = "info"
+                else:
+                    text = "No se pudo activar\nla red hospedada"
+                    info = "error"
+            else:
+                text = "No son iguales"
+                info = "error"
+        self.TOAST_COLOR = info
+        self.TOAST_TEXT = text
+
+    def set_ui(self):
         self.ssid_edit.setPlaceholderText("Nombre SSID")
         self.key_edit.setPlaceholderText("Password")
 
-        ssid, key = netsh.ssid_key()
-        self.ssid_edit.setText(ssid)
-        self.key_edit.setText(key)
+        self.ssid_edit.setText(netsh.HOSTED_NETWORK_INFO['ssid'])
+        self.key_edit.setText(netsh.HOSTED_NETWORK_INFO['key'])
 
         self.linear_layout.addWidget(self.ssid_edit)
         self.linear_layout.addWidget(self.key_edit)
         self.linear_layout.addWidget(self.btn)
 
         self.setStyleSheet(self.set_qss())
+
+    def emit_toast(self):
+        if self.TOAST_TEXT and self.TOAST_COLOR:
+            self.emit(SIGNAL("toast"), self.TOAST_TEXT, self.TOAST_COLOR)
+            self.TOAST_COLOR, self.TOAST_TEXT = "", ""
+
+    def upd_ui(self):
+        while True:
+            ctrl = False
+
+            state = netsh.HOSTED_NETWORK_INFO['state']
+
+            # if self.btn.text() == "Activando...":
+            #     self.btn.setText("Iniciar")
+            #     self.block_thread = True
+            #     self.btn_clicked()
+
+
+            print('state', state)
+
+            if state == netsh.LANG_DICT['state_init']:
+                btn_text = "Parar"
+            elif state == netsh.LANG_DICT['state_not_init']:
+                btn_text = "Iniciar"
+            elif state == netsh.LANG_DICT['state_not_available']:
+                btn_text = "Activar"
+
+            if self.btn.text() == "Activando...":  # texto actual
+                if btn_text != "Iniciar":
+                    btn_text = "Activando..."
+                    self.btn.setEnabled(False)
+                elif btn_text == "Iniciar":
+                    self.btn_change_text(btn_text)
+                    self.btn_clicked()
+                ctrl = True
+
+            if self.btn.text() == "Iniciando...":
+                if btn_text != "Parar":
+                    btn_text = "Iniciando..."
+                    self.btn.setEnabled(False)
+                elif btn_text == "Parar":
+                    self.btn_change_text(btn_text)
+                ctrl = True
+
+            print('btn', btn_text)
+            if not ctrl:
+                self.btn_change_text(btn_text)
+            else:
+                self.emit_toast()
+            self.btn.setEnabled(True)
+            time.sleep(5)
 
     def text_edited(self):
         if str(self.btn.text()) == "Parar":
@@ -191,28 +387,29 @@ class HotSpot(Activity):
 
     def btn_change_text(self, text):
         self.btn.setText(text)
-        if text == "Iniciar":
-            back_color = '#98FB98'
-            text_color = "#3CB371"
-        elif text == "Parar":
-            back_color = "#FFCACA"
-            text_color = "#FF9494"
-        else:
-            back_color = "#F1F1F1"
-            text_color = "#555555"
-        hover_color = text_color
-        self.btn.setStyleSheet(
-            """
-            QPushButton{
-                background-color: %s;
-                color: %s;
-            }
-            QPushButton:hover{
-                color: #fff;
-                background-color: %s;
-            }
-            """ % (back_color, text_color, hover_color)
-        )
+
+        # if text == "Iniciar":
+        #     back_color = '#98FB98'
+        #     text_color = "#3CB371"
+        # elif text == "Parar":
+        #     back_color = "#FFCACA"
+        #     text_color = "#FF9494"
+        # else:
+        #     back_color = "#F1F1F1"
+        #     text_color = "#555555"
+        # hover_color = text_color
+        # self.btn.setStyleSheet(
+        #     """
+        #     QPushButton{
+        #         background-color: %s;
+        #         color: %s;
+        #     }
+        #     QPushButton:hover{
+        #         color: #fff;
+        #         background-color: %s;
+        #     }
+        #     """ % (back_color, text_color, hover_color)
+        # )
 
     @staticmethod
     def set_qss():

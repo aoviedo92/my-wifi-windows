@@ -1,7 +1,11 @@
+import threading
 import time
 import sys
 import ctypes
+from PyQt4.QtCore import QDir, SIGNAL
 from PyQt4.QtGui import *
+
+import netsh
 from frame import Frame
 from activities import HotSpot, ActionBar, Info, Toast
 
@@ -16,6 +20,7 @@ class Main(QWidget):
         self.hotspot = HotSpot(self)
         self.info = Info(self)
         self.hotspot.show()
+        self.connect(self.hotspot, SIGNAL("toast"), self.toast_notify)
         self.set_ui()
 
         self.current_activity = self.hotspot
@@ -45,12 +50,39 @@ class Main(QWidget):
         activity_to.show()
         self.current_activity = activity_to
 
+    def toast_notify(self, text, info, time_=3000):
+        toast = Toast(text, info, self)
+        toast.show_toast(time_)
+
 
 class UI(Frame):
+    STATE = netsh.HOSTED_NETWORK_INFO['state']
+
     def __init__(self):
         Frame.__init__(self)
         self.main = Main()
         self.layout_add(self.main)
+
+        self.state_has_changed(self.STATE)
+
+        thread = threading.Thread(target=self.upd_ui)
+        thread.setName('Frame')
+        thread.setDaemon(True)
+        thread.start()
+
+        self.connect(self, SIGNAL("state_changed"), self.state_has_changed)
+
+    def upd_ui(self):
+        while True:
+            state = netsh.HOSTED_NETWORK_INFO['state']
+            # print(self.STATE)
+            if self.STATE != state:
+                self.STATE = state
+                self.emit(SIGNAL("state_changed"), self.STATE)
+            time.sleep(5)
+
+    def state_has_changed(self, state):
+        self.set_icon_by_state_hosted_network(state)
 
 
 app = QApplication(sys.argv)
