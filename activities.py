@@ -271,8 +271,7 @@ class HotSpot(Activity):
 
     def btn_clicked(self):
         if not self.validate():
-            self.emit(SIGNAL("toast"), self.TOAST_TEXT, self.TOAST_COLOR)
-            self.TOAST_COLOR, self.TOAST_TEXT = "", ""
+            self.emit_toast()
             return
 
         self.btn.setEnabled(False)
@@ -296,7 +295,6 @@ class HotSpot(Activity):
             else:
                 text = "No se pudo detener\nla red hospedada"
                 info = "info"
-        # todo Activar
         elif btn_text == "Activar":
             self.btn.setText("Activando...")
             if self.ssid_edit.text() == netsh.HOSTED_NETWORK_INFO['ssid'] and \
@@ -309,7 +307,7 @@ class HotSpot(Activity):
                 else:
                     text = "No se pudo activar\nla red hospedada"
                     info = "error"
-            else:
+            else:  # todo cuando hay q activar, y se cambia ssid o key antes de activar
                 text = "No son iguales"
                 info = "error"
         self.TOAST_COLOR = info
@@ -381,6 +379,7 @@ class HotSpot(Activity):
             time.sleep(5)
 
     def text_edited(self):
+        # todo implem "Reiniciar" y "Aplicar e iniciar"
         if str(self.btn.text()) == "Parar":
             self.btn_change_text("Reiniciar")
         elif str(self.btn.text()) == "Iniciar":
