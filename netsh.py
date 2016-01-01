@@ -41,9 +41,11 @@ def run_cmd(cmd, as_list=True):
             output = [line.strip() for line in output if line not in ['', '\r', '\t']]
         return output
     except subprocess.CalledProcessError:
-        return "process returns a non-zero exit status"
+        # "process returns a non-zero exit status"
+        return False
     except subprocess.TimeoutExpired:
-        return "the timeout expires"
+        # "the timeout expires"
+        return False
 
 
 def check_hosted_network():
@@ -72,25 +74,31 @@ def synchronized(lock):
 # lock = threading.Lock()
 # @synchronized(threading.Lock())
 def show_hosted_network():
-    # print("show hosted net")
-    # lock.acquire()
     show = run_cmd('netsh wlan show hostednetwork')
-    # print(show)
-    # lock.release()
-    # print(show)
+    print(show)
     return show
 
 
 def start_hosted_network():
     start = run_cmd("netsh wlan start hostednetwork", as_list=False)
-    if start.startswith("Se inic"):
-        return True
+    if start:
+        if start.startswith("Se inic"):
+            return True
     return False
 
 
 def stop_hosted_network():
-    start = run_cmd("netsh wlan stop hostednetwork", as_list=False)
-    if start.startswith("Se detuvo"):
+    stop = run_cmd("netsh wlan stop hostednetwork", as_list=False)
+    if stop:
+        if stop.startswith("Se detuvo"):
+            return True
+    return False
+
+
+def disallow_hosted_network():
+    disallow = run_cmd("netsh wlan set hostednetwork mode=disallow")
+    if disallow:
+        print(disallow)
         return True
     return False
 
@@ -102,8 +110,13 @@ def only_activate_hosted_network():
     return False
 
 
-def activate_hosted_network(ssid, key):
-    pass
+def set_hosted_network(ssid, key):
+    hosted_network = run_cmd("netsh wlan set hostednetwork mode=allow ssid=%s key=%s" % (ssid, key), as_list=False)
+    if hosted_network:
+        print(hosted_network)
+        return True
+    return False
+
 
 # print(start_hosted_network())
 def get_state():
