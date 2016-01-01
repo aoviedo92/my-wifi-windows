@@ -237,10 +237,8 @@ class HotSpot(Activity):
         self.key_edit = QLineEdit()
         self.btn = QPushButton("...")
         self.connect(self.btn, SIGNAL("clicked()"), self.btn_clicked)
-        self.ssid_edit.textEdited.connect(self.text_edited)
-        self.key_edit.textEdited.connect(self.text_edited)
-        # self.connect(self.key_edit, SIGNAL("textEdited()"), self.text_edited)
-        # self.connect(self.ssid_edit, SIGNAL("textEdited"), self.text_edited)
+        self.connect(self.key_edit, SIGNAL("textChanged(QString)"), self.text_edited)
+        self.connect(self.ssid_edit, SIGNAL("textChanged(QString)"), self.text_edited)
         self.set_ui()
 
         thread = threading.Thread(target=self.upd_ui)
@@ -284,14 +282,12 @@ class HotSpot(Activity):
             if start:
                 text = "Se inició correctamente\nla red hospedada"
                 info = "info"
-                print("ver", text, info)
             else:
                 text = "No se pudo iniciar\ncorrectamente la red hospedada"
                 info = "error"
         elif btn_text == "Parar":
             self.btn.setText("Deteniendo...")
             stop = netsh.stop_hosted_network()
-            self.cmd_status = stop
             if stop:
                 text = "Se detuvo la red hospedada"
                 info = "info"
@@ -303,9 +299,7 @@ class HotSpot(Activity):
             if self.ssid_edit.text() == netsh.HOSTED_NETWORK_INFO['ssid'] and \
                             self.key_edit.text() == netsh.HOSTED_NETWORK_INFO['key']:
                 activate = netsh.only_activate_hosted_network()
-                self.cmd_status = activate
                 if activate:  # ahora iniciarla
-                    # netsh.start_hosted_network()
                     text = "El modo de red hospedada\nse estableció en permitir"
                     info = "info"
                 else:
@@ -332,9 +326,19 @@ class HotSpot(Activity):
             if ctrl:
                 text = "Se ha reiniciado\nla red"
                 info = "info"
+        elif btn_text == "Aplicar e iniciar":
+            self.btn.setText("Aplicando...")
+            text = "No se han podido\nestablecer los nuevos cambios"
+            info = "error"
+            ctrl = netsh.set_hosted_network(self.ssid_edit.text(), self.key_edit.text())
+            if ctrl:
+                ctrl = netsh.start_hosted_network()
+            if ctrl:
+                text = "Se han aplicado los cambios\na la red"
+                info = "info"
 
-        self.TOAST_COLOR = info
         self.TOAST_TEXT = text
+        self.TOAST_COLOR = info
         print('fin', self.TOAST_COLOR, self.TOAST_TEXT)
 
     def set_ui(self):
@@ -366,7 +370,7 @@ class HotSpot(Activity):
         :param click_again: Si es necesaro simular un click con el nuevo btn-text
         :return: btn_text, process
         """
-        process = False
+        process = False  # mientras se este procesando los cmd de netsh, deshabilitar btn
         if self.btn.text() == current_btn_text:
             self.btn.setEnabled(False)
             process = True
@@ -384,12 +388,11 @@ class HotSpot(Activity):
         actualiza cada 5s el estado del btn
         """
         while True:
-            process = False  # mientras se este procesando los cmd de netsh, deshabilitar btn
             self.btn.setEnabled(True)
 
             # comprobar estado de la red, para actualiz el btn
             state = netsh.HOSTED_NETWORK_INFO['state']
-            print('sta', state)
+            # print('sta', state)
             if state == netsh.LANG_DICT['state_init']:
                 btn_text = "Parar"
             elif state == netsh.LANG_DICT['state_not_init']:
@@ -398,47 +401,14 @@ class HotSpot(Activity):
                 btn_text = "Activar"
 
             process = self.take_action(btn_text, "Activando...", ["Iniciar"], click_again=True)
-            # estos bloques if corresponden a los distintos estados del btn mientras haya procesamiento.
-            # if self.btn.text() == "Activando...":  # texto actual
-            #     self.btn.setEnabled(False)
-            #     process = True
-            #     if btn_text == "Iniciar":
-            #         self.btn_change_text(btn_text)  # cambiar a Iniciar
-            #         self.btn.setEnabled(True)
-            #         self.btn_clicked()  # para q funcione como si fuera un clic, al comprobar q el btn text es Iniciar, iniciara la red
-            #         process = False  # terminado el procesamiento, se emite un toast con la noticia
-
-            process = self.take_action(btn_text, "Iniciando...", ["Parar", "Activar"])
-            # if self.btn.text() == "Iniciando...":
-            #     # si esta iniciando, no se puede habilitar hasta q termine
-            #     process = True
-            #     self.btn.setEnabled(False)
-            #     if btn_text == "Parar":  # si el estado es Iniciado, el btn_text sera Parar
-            #         self.btn_change_text(btn_text)  # entonces si la red ya inicio, actualiz el btn-text
-            #         self.btn.setEnabled(True)  # lo habilitamos
-            #         process = False  # y emitimos Toast con la notificacion
-            #     if btn_text == "Activar":  # caso en q por backgr se deshabilite la red
-            #         self.btn_change_text(btn_text)
-            #         self.btn.setEnabled(True)
-            #         process = False
-
-            process = self.take_action(btn_text, "Deteniendo...", ["Iniciar"])
-            # if self.btn.text() == "Deteniendo...":  # el mismo proc para detener la red
-            #     self.btn.setEnabled(False)
-            #     process = True
-            #     if btn_text == "Iniciar":
-            #         self.btn_change_text(btn_text)
-            #         self.btn.setEnabled(True)
-            #         process = False
-
-            process = self.take_action(btn_text, "Reiniciando...", ["Parar"])
-            # if self.btn.text() == "Reiniciando...":
-            #     self.btn.setEnabled(False)
-            #     process = True
-            #     if btn_text == "Parar":
-            #         self.btn_change_text(btn_text)
-            #         self.btn.setEnabled(True)
-            #         process = False
+            if not process:
+                process = self.take_action(btn_text, "Aplicando...", ["Iniciar"], click_again=True)
+            if not process:
+                process = self.take_action(btn_text, "Iniciando...", ["Parar", "Activar"])
+            if not process:
+                process = self.take_action(btn_text, "Deteniendo...", ["Iniciar"])
+            if not process:
+                process = self.take_action(btn_text, "Reiniciando...", ["Parar"])
 
             # cuand btn es "reiniciar" o "aplicar e iniciar" evitar q se cambie el btn-text por el estad actual
             if self.btn.text() == "Aplicar e iniciar":
@@ -453,19 +423,27 @@ class HotSpot(Activity):
             if not process:  # si no hay proc en backgr
                 self.btn_change_text(btn_text)  # establec el btn-text actual
                 self.emit_toast()  # siemre q process=False se notifica q ocurrio
-                # self.cmd_status = False
-            print('btn', btn_text)
+
+            # print('btn', btn_text)
             time.sleep(5)
 
     def text_edited(self):
-        if str(self.btn.text()) == "Parar":
+        if self.btn.text() == "Parar":
             self.btn_change_text("Reiniciar")
-        elif str(self.btn.text()) == "Iniciar":
+        elif self.btn.text() == "Reiniciar":
+            if self.ssid_edit.text() == netsh.HOSTED_NETWORK_INFO['ssid'] and \
+                            self.key_edit.text() == netsh.HOSTED_NETWORK_INFO['key']:
+                self.btn_change_text("Parar")
+        elif self.btn.text() == "Iniciar":
             self.btn_change_text("Aplicar e iniciar")
+        elif self.btn.text() == "Aplicar e iniciar":
+            if self.ssid_edit.text() == netsh.HOSTED_NETWORK_INFO['ssid'] and \
+                            self.key_edit.text() == netsh.HOSTED_NETWORK_INFO['key']:
+                self.btn_change_text("Iniciar")
 
     def btn_change_text(self, text):
         self.btn.setText(text)
-
+        # todo cambiarle el qss dinamicamente a btn hace q la app stop and crash
         # if text == "Iniciar":
         #     back_color = '#98FB98'
         #     text_color = "#3CB371"

@@ -118,7 +118,6 @@ class TitleBar(QDialog):
 class Frame(QFrame):
     def __init__(self, parent=None):
         QFrame.__init__(self, parent)
-        self.already_close = False
         self.mouse_down = False
         self.title_bar = TitleBar(self)
         self.content = QWidget()
@@ -186,6 +185,7 @@ class Frame(QFrame):
         #     m_mouse_down = False
 
     def createTrayIcon(self):
+        # todo crear acciones: hotspot, info, ayuda
         minimizeAction = QAction("Mi&nimize", self, triggered=self.hide)
         maximizeAction = QAction("Ma&ximize", self, triggered=self.showMaximized)
         restoreAction = QAction("&Restore", self, triggered=self.showNormal)

@@ -4,7 +4,6 @@ import sys
 import ctypes
 from PyQt4.QtCore import QDir, SIGNAL
 from PyQt4.QtGui import *
-
 import netsh
 from frame import Frame
 from activities import HotSpot, ActionBar, Info, Toast
