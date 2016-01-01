@@ -153,31 +153,60 @@ class Info(Activity):
         # self.browser = QTextBrowser()
         # self.browser.setFixedSize(270, 350)
         self.config_lbl = QLabel("Configuración de la red hospedada")
+        self.config_lbl_info = QLabel()
         self.state_lbl = QLabel("Estado de la red hospedada")
+        self.state_lbl_info = QLabel()
         self.users_lbl = QLabel("Usuarios conectados")
+        self.users_lbl_info = QLabel()
         # self.linear_layout.addWidget(self.browser)
         self.linear_layout.addWidget(self.config_lbl)
+        self.linear_layout.addWidget(self.config_lbl_info)
         self.linear_layout.addWidget(self.state_lbl)
+        self.linear_layout.addWidget(self.state_lbl_info)
         self.linear_layout.addWidget(self.users_lbl)
+        self.linear_layout.addWidget(self.users_lbl_info)
         # self.browser.append('<h1>texto</h1>')
         self.set_ui()
 
-        # thread = threading.Thread(target=self.run)
-        # self.thread = threading.Thread(target=self.run)
-        # thread.setName("browser")
-        # self.thread.setName("InfoThread")
-        # self.thread.setDaemon(True)
-        # self.thread.start()
+        thread = threading.Thread(target=self.run)
+        thread.setDaemon(True)
+        thread.start()
 
     def run(self):
         while True:
-            # self.set_text_browser()
-            # show = netsh.show_hosted_network()
-            # print(show)
-            # self.label.setText(str(random.randint(0, 100)))
-            # print(self.thread._stopped)
-            threads = threading.enumerate()
-            # print(threads)
+            info = netsh.HOSTED_NETWORK_INFO.copy()
+            # config hostednetw
+            # mode = info["modo"]
+            # ssid = info["ssid"]
+            # key = info["key"]
+            # max_clients = info["max_clientes"]
+            # authentication = info["autenticacion"]
+            # cifrado = info["cifrado"]
+
+            self.config_lbl_info.setText(
+                "Modo:\t{modo}\n"
+                "SSID:\t{ssid}\n"
+                "KEY:\t{key}\n"
+                "Máximo clientes:\t{max_clientes}\n"
+                "Autenticación:\t{autenticacion}\n"
+                "Cifrado:\t{cifrado}".format(**info))
+            try:
+                status = "BSSID:\t{bssid}\n" \
+                         "Radio:\t{radio}\n" \
+                         "Canal:\t{canal}\n".format(**info)
+            except KeyError:
+                status = ""
+            print(status)
+            self.state_lbl_info.setText(
+                "Estado:\t{state}\n".format(**info)+status)
+
+
+            # estado hostednet
+            # state = info["state"]
+            # bssid = info["bssid"]
+            # radio = info["radio"]
+            # canal = info["canal"]
+
             time.sleep(5)
 
     def upd_info(self):
@@ -211,11 +240,18 @@ class Info(Activity):
     def set_ui(self):
         # self.set_text_browser()
         self.config_lbl.setObjectName("title")
+        self.config_lbl_info.setObjectName("info")
         self.state_lbl.setObjectName("title")
+        self.state_lbl_info.setObjectName("info")
         self.users_lbl.setObjectName("title")
+        self.users_lbl_info.setObjectName("info")
         self.setStyleSheet("""
+        #info{
+            color: #777;
+            font: 12px;
+        }
         #title{
-            color: #ccc;
+            color: #555;
             font: 18px;
         }
         Info{

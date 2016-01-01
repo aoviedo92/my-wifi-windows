@@ -147,6 +147,7 @@ def hosted_network_info():
     HOSTED_NETWORK_INFO["max_clientes"] = show[4].split(":")[1].strip().replace('"', "")
     HOSTED_NETWORK_INFO["autenticacion"] = show[5].split(":")[1].strip().replace('"', "")
     HOSTED_NETWORK_INFO["cifrado"] = show[6].split(":")[1].strip().replace('"', "")
+
     HOSTED_NETWORK_INFO["state"] = state
     # si la red no esta iniciada no tiene estos datos.
     try:
