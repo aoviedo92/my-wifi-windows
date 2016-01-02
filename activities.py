@@ -191,6 +191,7 @@ class Info(Activity):
                 "Estado:\t{state}\n".format(**info)+status)
 
             try:
+                # todo problema con la cant user conn: al parar la wifi, se mantiene el titulo con los q habian
                 if self.cant_users != info["cant_clients"]:
                     # todo lanzar notificacion de la bandeja del sys
                     self.users_lbl.setText("Usuarios conectados (%s)" % info["cant_clients"])
