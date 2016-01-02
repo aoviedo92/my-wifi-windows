@@ -150,22 +150,19 @@ class Activity(QFrame):
 class Info(Activity):
     def __init__(self, parent=None):
         super(Info, self).__init__(parent)
-        # self.browser = QTextBrowser()
-        # self.browser.setFixedSize(270, 350)
+        self.cant_users = 0
         self.config_lbl = QLabel("Configuración de la red hospedada")
         self.config_lbl_info = QLabel()
         self.state_lbl = QLabel("Estado de la red hospedada")
         self.state_lbl_info = QLabel()
-        self.users_lbl = QLabel("Usuarios conectados")
+        self.users_lbl = QLabel("Usuarios conectados (%s)" % self.cant_users)
         self.users_lbl_info = QLabel()
-        # self.linear_layout.addWidget(self.browser)
         self.linear_layout.addWidget(self.config_lbl)
         self.linear_layout.addWidget(self.config_lbl_info)
         self.linear_layout.addWidget(self.state_lbl)
         self.linear_layout.addWidget(self.state_lbl_info)
         self.linear_layout.addWidget(self.users_lbl)
         self.linear_layout.addWidget(self.users_lbl_info)
-        # self.browser.append('<h1>texto</h1>')
         self.set_ui()
 
         thread = threading.Thread(target=self.run)
@@ -175,14 +172,7 @@ class Info(Activity):
     def run(self):
         while True:
             info = netsh.HOSTED_NETWORK_INFO.copy()
-            # config hostednetw
-            # mode = info["modo"]
-            # ssid = info["ssid"]
-            # key = info["key"]
-            # max_clients = info["max_clientes"]
-            # authentication = info["autenticacion"]
-            # cifrado = info["cifrado"]
-
+            print('INFO', info)
             self.config_lbl_info.setText(
                 "Modo:\t{modo}\n"
                 "SSID:\t{ssid}\n"
@@ -196,17 +186,19 @@ class Info(Activity):
                          "Canal:\t{canal}\n".format(**info)
             except KeyError:
                 status = ""
-            print(status)
+
             self.state_lbl_info.setText(
                 "Estado:\t{state}\n".format(**info)+status)
 
+            try:
+                if self.cant_users != info["cant_clients"]:
+                    # todo lanzar notificacion de la bandeja del sys
+                    self.users_lbl.setText("Usuarios conectados (%s)" % info["cant_clients"])
+                    self.cant_users = info["cant_clients"]
+            except KeyError:
+                self.users_lbl = QLabel("Usuarios conectados (%s)" % self.cant_users)
 
-            # estado hostednet
-            # state = info["state"]
-            # bssid = info["bssid"]
-            # radio = info["radio"]
-            # canal = info["canal"]
-
+            self.users_lbl_info.setText(info["data_clients"])
             time.sleep(5)
 
     def upd_info(self):
@@ -391,7 +383,6 @@ class HotSpot(Activity):
         self.setStyleSheet(self.set_qss())
 
     def emit_toast(self):
-        print("emit")
         if self.TOAST_TEXT and self.TOAST_COLOR:
             print('toasts', self.TOAST_TEXT, self.TOAST_COLOR)
             self.emit(SIGNAL("toast"), self.TOAST_TEXT, self.TOAST_COLOR)

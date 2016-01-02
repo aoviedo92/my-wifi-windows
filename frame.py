@@ -6,6 +6,8 @@ from PyQt4 import QtGui
 import netsh
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui import *
+
+from activities import HotSpot
 from res import resources
 
 TITLE = "Easy Wifi Windows"
@@ -186,7 +188,8 @@ class Frame(QFrame):
 
     def createTrayIcon(self):
         # todo crear acciones: hotspot, info, ayuda
-        minimizeAction = QAction("Mi&nimize", self, triggered=self.hide)
+
+        minimizeAction = QAction("HotSpot", self, triggered=self.show)
         maximizeAction = QAction("Ma&ximize", self, triggered=self.showMaximized)
         restoreAction = QAction("&Restore", self, triggered=self.showNormal)
         quitAction = QAction("&Quit", self, triggered=QtGui.qApp.quit)

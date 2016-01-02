@@ -75,7 +75,7 @@ def synchronized(lock):
 # @synchronized(threading.Lock())
 def show_hosted_network():
     show = run_cmd('netsh wlan show hostednetwork')
-    print(show)
+    # print(show)
     return show
 
 
@@ -135,9 +135,10 @@ def hosted_network_info():
     # while True:
     show, state = get_state()
     show_security = show_security_hosted_network()
+    data_clients = ""
     # print(show_security)
     # i=0
-    # for line in show_security:
+    # for line in show:
     #     print(i,line)
     #     i+=1
 
@@ -154,9 +155,24 @@ def hosted_network_info():
         HOSTED_NETWORK_INFO["bssid"] = show[10].split(":")[1].strip().replace('"', "")
         HOSTED_NETWORK_INFO["radio"] = show[11].split(":")[1].strip().replace('"', "")
         HOSTED_NETWORK_INFO["canal"] = show[12].split(":")[1].strip().replace('"', "")
+        HOSTED_NETWORK_INFO["cant_clients"] = show[13].split(":")[1].strip()
+        i = 14
+        while i < 34:#34 pq 20 es el max client permit
+            try:
+                spl = show[i].split(" ")#esta linea tiene la froma mac:   status
+                client_mac = spl[0]
+                client_status = spl[-1]  # status es autenticado o no
+                data_clients += "%s:\t%s\n" % (client_mac, client_status)
+                i += 1
+            except IndexError:
+                break
+        # print('data clients', data_clients)
     except IndexError:
         pass
-        # time.sleep(5)
+
+    if not data_clients:
+        data_clients = "No hay clientes conectados"
+    HOSTED_NETWORK_INFO["data_clients"] = data_clients
 
 
 def run():
@@ -165,7 +181,6 @@ def run():
         hosted_network_info()
 
 
-# print("tr")
 thread = threading.Thread(target=run)
 thread.setName('netsh')
 thread.setDaemon(True)
@@ -177,26 +192,9 @@ def show_security_hosted_network():
     return show
 
 
-# def ssid_key():
-#     ssid, key = "", ""
-#     lines = show_hosted_network()
-#     for line in lines:
-#         spl = line.split(":")
-#         if len(spl) == 2:
-#             if spl[0].strip().find(LANG_DICT['ssid_name']) != -1:
-#                 ssid = spl[1].strip().replace('"', "")
-#                 break
-#     lines = show_security_hosted_network()
-#     for line in lines:
-#         spl = line.split(":")
-#         if len(spl) == 2:
-#             if spl[0].strip().find(LANG_DICT['security_key']) != -1:
-#                 key = spl[1].strip()
-#                 break
-#     return ssid, key
-
-
 HOSTED_NETWORK_INFO = dict()
+# ejecutar primero este metodo para que esta linea en main no de KeyError
+# STATE = netsh.HOSTED_NETWORK_INFO['state']
 hosted_network_info()
 # print(HOSTED_NETWORK_INFO)
 # print(ssid_key())
