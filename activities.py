@@ -155,7 +155,7 @@ class Info(Activity):
         self.config_lbl_info = QLabel()
         self.state_lbl = QLabel("Estado de la red hospedada")
         self.state_lbl_info = QLabel()
-        self.users_lbl = QLabel("Usuarios conectados (%s)" % self.cant_users)
+        self.users_lbl = QLabel()
         self.users_lbl_info = QLabel()
         self.linear_layout.addWidget(self.config_lbl)
         self.linear_layout.addWidget(self.config_lbl_info)
@@ -191,44 +191,20 @@ class Info(Activity):
                 "Estado:\t{state}\n".format(**info)+status)
 
             try:
-                # todo problema con la cant user conn: al parar la wifi, se mantiene el titulo con los q habian
                 if self.cant_users != info["cant_clients"]:
                     # todo lanzar notificacion de la bandeja del sys
                     self.users_lbl.setText("Usuarios conectados (%s)" % info["cant_clients"])
                     self.cant_users = info["cant_clients"]
             except KeyError:
-                self.users_lbl = QLabel("Usuarios conectados (%s)" % self.cant_users)
+                pass
 
+            self.users_lbl.setText("Usuarios conectados (%s)" % self.cant_users)
             self.users_lbl_info.setText(info["data_clients"])
             time.sleep(5)
 
     def upd_info(self):
         show = netsh.show_hosted_network()
 
-    # def set_text_browser(self):
-    #     self.browser.clear()
-    #     show = netsh.show_hosted_network()
-    #     table = "<table width='250'>"
-    #     for line in show:
-    #         if line.find("--------") != -1:
-    #             continue
-    #         elif line.find(" : ") != -1 or line.find(": ") != -1:
-    #             cols = line.split(":")
-    #             row = """
-    #                 <tr>
-    #                 <td align="left">%s</td>
-    #                 <td align="left">%s</td>
-    #                 </tr>
-    #                 """ % (cols[0].strip(), cols[1].strip())
-    #             table += row
-    #         elif re.match('^.{2}:.{2}.*\s+Autenticado', line):
-    #             row = "<tr><td colspan=2><span style='color: coral'>%s</span></td></tr>" % line
-    #             table += row
-    #         else:
-    #             row = "<tr><td colspan=2><h3>%s</h3></td></tr>" % line
-    #             table += row
-    #     table += "</table>"
-    #     self.browser.append(table)
 
     def set_ui(self):
         # self.set_text_browser()

@@ -91,6 +91,7 @@ def stop_hosted_network():
     stop = run_cmd("netsh wlan stop hostednetwork", as_list=False)
     if stop:
         if stop.startswith("Se detuvo"):
+            HOSTED_NETWORK_INFO['cant_clients'] = 0
             return True
     return False
 
