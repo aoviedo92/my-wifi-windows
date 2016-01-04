@@ -89,17 +89,20 @@ class UI(Frame):
         self.trayIcon.activated.connect(self.icon_activated)
 
     def createActions(self):
+        # crear primero las acciones definidas por el padre, luego las sobreescr
         super(UI, self).createActions()
-        self.action1 = QAction("HotSpot", self, triggered=self.test)
-        self.action2 = QAction("Clientes", self, triggered=self.test)
-        self.action3 = QAction("Info", self, triggered=self.test)
-        self.action4 = QAction("Ayuda", self, triggered=self.showNormal)
+        self.action1 = QAction("HotSpot", self, triggered=self.show_tab)
+        self.action2 = QAction("Clientes", self, triggered=self.show_tab)
+        self.action3 = QAction("Info", self, triggered=self.show_tab)
+        self.action4 = QAction("Ayuda", self, triggered=self.show_tab)
 
-    def test(self):
+    def show_tab(self):
+        # cuando se selecciona una accion del menu contex
         self.main.tab_clicked()
         self.show()
 
     def icon_activated(self, reason):
+        # cuando se da clic a la ruedita en el icon tray
         if reason == QSystemTrayIcon.MiddleClick:
             state = netsh.HOSTED_NETWORK_INFO['state']
             if state == "Iniciado":
@@ -108,6 +111,7 @@ class UI(Frame):
             elif state == "No iniciado":
                 self.main.hotspot.btn_change_text("Iniciar")
                 self.main.hotspot.btn_clicked()
+        # y ejecutar tb el metodo del padre pa el click
         super(UI, self).icon_activated(reason)
 
     def message_clicked(self):
