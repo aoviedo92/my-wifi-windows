@@ -7,7 +7,14 @@ from PyQt4.QtGui import *
 from PyQt4 import QtCore
 import netsh
 
-RUN = True
+LBL_STYLE = """#info{
+            color: #777;
+            font: 12px;
+        }
+        #title{
+            color: #555;
+            font: 18px;
+        }"""
 
 
 class ActionBar(QFrame):
@@ -16,13 +23,15 @@ class ActionBar(QFrame):
     def __init__(self, parent=None):
         super(ActionBar, self).__init__(parent)
         self.hotspot_btn = QPushButton("HotSpot")
+        self.clients_btn = QPushButton()  # este btn toma el text dinamicam desde UI()
         self.info_btn = QPushButton("Info")
         self.help_btn = QPushButton("Ayuda")
 
-        self.btn_list = [self.help_btn, self.hotspot_btn, self.info_btn]
+        self.btn_list = [self.help_btn, self.hotspot_btn, self.info_btn, self.clients_btn]
 
         layout = QHBoxLayout()
         layout.addWidget(self.hotspot_btn)
+        layout.addWidget(self.clients_btn)
         layout.addWidget(self.info_btn)
         layout.addWidget(self.help_btn)
         layout.addStretch(1)
@@ -55,12 +64,6 @@ class ActionBar(QFrame):
         for bt in self.btn_list:
             bt.setStyleSheet(normal_qss)
         btn.setStyleSheet(active_qss)
-        # self.setStyleSheet(normal_qss)
-        # for btn in self.btn_list:
-        #     if btn.text() != text:
-        #         btn.setStyleSheet(normal_qss)
-        #     else:
-        #         btn.setStyleSheet(active_qss)
 
     @staticmethod
     def set_qss():
@@ -161,8 +164,6 @@ class Info(Activity):
         self.linear_layout.addWidget(self.config_lbl_info)
         self.linear_layout.addWidget(self.state_lbl)
         self.linear_layout.addWidget(self.state_lbl_info)
-        self.linear_layout.addWidget(self.users_lbl)
-        self.linear_layout.addWidget(self.users_lbl_info)
         self.set_ui()
 
         thread = threading.Thread(target=self.run)
@@ -172,7 +173,7 @@ class Info(Activity):
     def run(self):
         while True:
             info = netsh.HOSTED_NETWORK_INFO.copy()
-            print('INFO', info)
+            # print('INFO', info)
             self.config_lbl_info.setText(
                 "Modo:\t{modo}\n"
                 "SSID:\t{ssid}\n"
@@ -188,23 +189,12 @@ class Info(Activity):
                 status = ""
 
             self.state_lbl_info.setText(
-                "Estado:\t{state}\n".format(**info)+status)
+                "Estado:\t{state}\n".format(**info) + status)
 
-            try:
-                if self.cant_users != info["cant_clients"]:
-                    # todo lanzar notificacion de la bandeja del sys
-                    self.users_lbl.setText("Usuarios conectados (%s)" % info["cant_clients"])
-                    self.cant_users = info["cant_clients"]
-            except KeyError:
-                pass
-
-            self.users_lbl.setText("Usuarios conectados (%s)" % self.cant_users)
-            self.users_lbl_info.setText(info["data_clients"])
             time.sleep(5)
 
     def upd_info(self):
         show = netsh.show_hosted_network()
-
 
     def set_ui(self):
         # self.set_text_browser()
@@ -215,21 +205,11 @@ class Info(Activity):
         self.users_lbl.setObjectName("title")
         self.users_lbl_info.setObjectName("info")
         self.setStyleSheet("""
-        #info{
-            color: #777;
-            font: 12px;
-        }
-        #title{
-            color: #555;
-            font: 18px;
-        }
+
         Info{
             background-color: #fff;
         }
-        QTextBrowser{
-            border: 0;
-        }
-        """)
+        """ + LBL_STYLE)
 
 
 class HotSpot(Activity):
@@ -344,7 +324,6 @@ class HotSpot(Activity):
 
         self.TOAST_TEXT = text
         self.TOAST_COLOR = info
-        print('fin', self.TOAST_COLOR, self.TOAST_TEXT)
 
     def set_ui(self):
         self.ssid_edit.setPlaceholderText("Nombre SSID")
@@ -361,7 +340,6 @@ class HotSpot(Activity):
 
     def emit_toast(self):
         if self.TOAST_TEXT and self.TOAST_COLOR:
-            print('toasts', self.TOAST_TEXT, self.TOAST_COLOR)
             self.emit(SIGNAL("toast"), self.TOAST_TEXT, self.TOAST_COLOR)
             self.TOAST_COLOR, self.TOAST_TEXT = "", ""
 
@@ -497,3 +475,18 @@ class HotSpot(Activity):
                 background-color: #3CB371;
             }
         """
+
+
+class Clients(Activity):
+    def __init__(self, parent=None):
+        super(Clients, self).__init__(parent)
+        self.title_lbl = QLabel("Clientes conectados")
+        self.clients_lbl = QLabel()
+        self.linear_layout.addWidget(self.title_lbl)
+        self.linear_layout.addWidget(self.clients_lbl)
+        self.set_ui()
+
+    def set_ui(self):
+        self.title_lbl.setObjectName("title")
+        self.clients_lbl.setObjectName("info")
+        self.setStyleSheet(LBL_STYLE)

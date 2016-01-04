@@ -6,7 +6,7 @@ from PyQt4.QtCore import QDir, SIGNAL
 from PyQt4.QtGui import *
 import netsh
 from frame import Frame
-from activities import HotSpot, ActionBar, Info, Toast
+from activities import HotSpot, ActionBar, Info, Toast, Clients
 
 APP_ID = 'dev$oviedo.my-wifi-windows-py3.3PyQt4.v1'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
@@ -18,6 +18,7 @@ class Main(QWidget):
         self.action_bar = ActionBar(self)
         self.hotspot = HotSpot(self)
         self.info = Info(self)
+        self.clients = Clients(self)
         self.hotspot.show()
         self.connect(self.hotspot, SIGNAL("toast"), self.toast_notify)
         self.set_ui()
@@ -40,7 +41,18 @@ class Main(QWidget):
         elif text == "Info":
             # self.info.set_text_browser(self.browser_text)
             self.change_activity(self.info)
-        self.action_bar.active_btn(self.sender())
+        elif text.startswith("Clientes"):
+            self.change_activity(self.clients)
+        try:
+            self.action_bar.active_btn(self.sender())
+        except AttributeError:  # este error puede saltar cuando ejecutamos una accion del mebu cont,
+            # pq QAction no tiene attributo de stylesheet(q uso para ponerle la rayita al tab selecc)
+            # Entonces recorremos todos los btns buscando cual tiene dicho text
+            for btn in self.action_bar.btn_list:
+                if btn.text().startswith(text):  # usar starwith el lugar de == por el tab Clientes (x),
+                    # x cambia segun la cant de clientes
+                    self.action_bar.active_btn(btn)
+                    break
 
     def change_activity(self, activity_to, activity_from=None):
         if not activity_from:
@@ -60,6 +72,7 @@ class UI(Frame):
     def __init__(self):
         Frame.__init__(self)
         self.main = Main()
+        self.cant_clients = 0
         self.layout_add(self.main)
 
         self.state_has_changed(self.STATE)
@@ -70,11 +83,51 @@ class UI(Frame):
         thread.start()
 
         self.connect(self, SIGNAL("state_changed"), self.state_has_changed)
+        self.connect(self.trayIcon, SIGNAL("messageClicked()"), self.message_clicked)
+        # self.connect(self.trayIcon, SIGNAL("activated(QString)"), self.icon_activated)NO BORRAR
+        # todo no encuentro la forma de conectar trayIcon a activated usando el nuevo estilo(ver comentario de arriba)
+        self.trayIcon.activated.connect(self.icon_activated)
+
+    def createActions(self):
+        super(UI, self).createActions()
+        self.action1 = QAction("HotSpot", self, triggered=self.test)
+        self.action2 = QAction("Clientes", self, triggered=self.test)
+        self.action3 = QAction("Info", self, triggered=self.test)
+        self.action4 = QAction("Ayuda", self, triggered=self.showNormal)
+
+    def test(self):
+        self.main.tab_clicked()
+        self.show()
+
+    def icon_activated(self, reason):
+        if reason == QSystemTrayIcon.MiddleClick:
+            state = netsh.HOSTED_NETWORK_INFO['state']
+            if state == "Iniciado":
+                self.main.hotspot.btn_change_text("Parar")
+                self.main.hotspot.btn_clicked()
+            elif state == "No iniciado":
+                self.main.hotspot.btn_change_text("Iniciar")
+                self.main.hotspot.btn_clicked()
+        super(UI, self).icon_activated(reason)
+
+    def message_clicked(self):
+        self.main.change_activity(self.main.clients)
+        self.show()
 
     def upd_ui(self):
         while True:
-            state = netsh.HOSTED_NETWORK_INFO['state']
-            # print(self.STATE)
+            info = netsh.HOSTED_NETWORK_INFO.copy()
+            state = info['state']
+            # si un nuevo cliente se conecta
+            if int(self.cant_clients) < int(info["cant_clients"]):
+                new_client = info["data_clients"].split('\n')[
+                    -2]  # -2 pq la linea es asi: mac\tstatus\nmac\tstatus\n... al terminar en \n se hace el ultimo elem de la lista ""
+                # todo debe ser el ip o nombree de eq y no la mac(invest obtener ip a partir de mac)
+                mac = new_client.split('\t')[0].strip()
+                self.show_message("Nuevo cliente conectado", mac)
+            self.cant_clients = info["cant_clients"]
+            self.main.action_bar.clients_btn.setText("Clientes (%s)" % self.cant_clients)
+            self.main.clients.clients_lbl.setText(info["data_clients"])
             if self.STATE != state:
                 self.STATE = state
                 self.emit(SIGNAL("state_changed"), self.STATE)

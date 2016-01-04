@@ -151,6 +151,8 @@ def hosted_network_info():
     HOSTED_NETWORK_INFO["cifrado"] = show[6].split(":")[1].strip().replace('"', "")
 
     HOSTED_NETWORK_INFO["state"] = state
+
+    HOSTED_NETWORK_INFO["cant_clients"] = 0
     # si la red no esta iniciada no tiene estos datos.
     try:
         HOSTED_NETWORK_INFO["bssid"] = show[10].split(":")[1].strip().replace('"', "")
@@ -163,7 +165,7 @@ def hosted_network_info():
                 spl = show[i].split(" ")#esta linea tiene la froma mac:   status
                 client_mac = spl[0]
                 client_status = spl[-1]  # status es autenticado o no
-                data_clients += "%s:\t%s\n" % (client_mac, client_status)
+                data_clients += "%s\t%s\n" % (client_mac, client_status)
                 i += 1
             except IndexError:
                 break
@@ -174,6 +176,7 @@ def hosted_network_info():
     if not data_clients:
         data_clients = "No hay clientes conectados"
     HOSTED_NETWORK_INFO["data_clients"] = data_clients
+
 
 
 def run():

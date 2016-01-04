@@ -1,8 +1,6 @@
 import threading
-
 import time
 from PyQt4 import QtGui
-
 import netsh
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui import *
@@ -114,9 +112,6 @@ class TitleBar(QDialog):
             self.frame.move(event.globalPos() - self.frame.offset)
 
 
-
-
-
 class Frame(QFrame):
     def __init__(self, parent=None):
         QFrame.__init__(self, parent)
@@ -125,8 +120,8 @@ class Frame(QFrame):
         self.content = QWidget()
         self.layout = QVBoxLayout()
         self.set_ui()
+        self.createActions()
         self.createTrayIcon()
-
 
     def set_ui(self):
         # self.setFrameShape(QFrame.StyledPanel)
@@ -186,27 +181,28 @@ class Frame(QFrame):
         # def mouseReleaseEvent(self, event):
         #     m_mouse_down = False
 
+    def createActions(self):
+        self.action1 = QAction("HotSpot", self, triggered=self.showMaximized)
+        self.action2 = QAction("Ma&ximize", self, triggered=self.showMaximized)
+        self.action3 = QAction("&Restore", self, triggered=self.showNormal)
+        self.quitAction = QAction("&Quit", self, triggered=QtGui.qApp.quit)
+
     def createTrayIcon(self):
         # todo crear acciones: hotspot, info, ayuda
-
-        minimizeAction = QAction("HotSpot", self, triggered=self.show)
-        maximizeAction = QAction("Ma&ximize", self, triggered=self.showMaximized)
-        restoreAction = QAction("&Restore", self, triggered=self.showNormal)
-        quitAction = QAction("&Quit", self, triggered=QtGui.qApp.quit)
-
         trayIconMenu = QMenu(self)
-        trayIconMenu.addAction(minimizeAction)
-        trayIconMenu.addAction(maximizeAction)
-        trayIconMenu.addAction(restoreAction)
+        trayIconMenu.addAction(self.action1)
+        trayIconMenu.addAction(self.action2)
+        trayIconMenu.addAction(self.action3)
+        trayIconMenu.addAction(self.action4)
         trayIconMenu.addSeparator()
-        trayIconMenu.addAction(quitAction)
+        trayIconMenu.addAction(self.quitAction)
 
         self.trayIcon = QSystemTrayIcon(self)
         self.trayIcon.setContextMenu(trayIconMenu)
         self.set_icon_by_state_hosted_network()
 
-        self.trayIcon.messageClicked.connect(self.message_clicked)
-        self.trayIcon.activated.connect(self.icon_activated)
+        # self.trayIcon.messageClicked.connect(self.message_clicked)
+        # self.trayIcon.activated.connect(self.icon_activated)
         self.trayIcon.show()
 
     def message_clicked(self):
@@ -215,16 +211,15 @@ class Frame(QFrame):
 
     def icon_activated(self, reason):
         if reason == QtGui.QSystemTrayIcon.Trigger:
-            # self.title_bar.frame.showNormal()
+            # todo invest al mostrar q aparezca encima del resto de ventanas abiertas(actualmente aparece el la taskbar y detras de la ventana activa)
             self.show()
         if reason == QSystemTrayIcon.MiddleClick:
             self.set_icon_by_state_hosted_network()
-            # self.show_message()
 
-    def show_message(self):
-        titleEdit = QLineEdit("titulo")
+    def show_message(self, title, message):
+        titleEdit = QLineEdit(title)
         bodyEdit = QTextEdit()
-        bodyEdit.setPlainText("message.")
+        bodyEdit.setPlainText(message)
         icon = QSystemTrayIcon.MessageIcon(QSystemTrayIcon.Information)
 
         self.trayIcon.showMessage(titleEdit.text(),
@@ -238,9 +233,9 @@ class Frame(QFrame):
         iniciada --> icono color
         :param state: uno de los estados posibles
         """
-        if state == netsh.LANG_DICT['state_init']:
+        if state == "Iniciado":
             self.trayIcon.setIcon(QIcon(':/wifi'))
-        elif state == netsh.LANG_DICT['state_not_init']:
+        elif state == "No iniciado":
             self.trayIcon.setIcon(QIcon(':/wifi-off'))
         else:
             self.trayIcon.setIcon(QIcon(':/wifi-off'))
